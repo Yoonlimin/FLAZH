@@ -26,7 +26,7 @@ export default function SignUp({ onBack, onAuthSuccess }) {
 
     try {
       // 2. Call the unified smart endpoint
-      const response = await fetch('http://192.168.101.222:5000/api/auth/continue', {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/continue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

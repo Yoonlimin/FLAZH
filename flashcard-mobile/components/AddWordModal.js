@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   StyleSheet, View, TextInput, TouchableOpacity, Text, Modal, 
-  TouchableWithoutFeedback, Keyboard, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform 
+  TouchableWithoutFeedback, Keyboard, ScrollView, Image, ActivityIndicator 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -109,14 +109,7 @@ export default function AddWordModal({ visible, onClose, onSave }) {
 
             <Text style={styles.modalTitle}>Create Flashcard</Text>
 
-            {/* 2️⃣ Use the reusable FlipCard component */}
-            <FlipCard 
-              word={word} 
-              description={description} 
-              imageUrl={selectedImage} 
-              forceFlip={forceFlip} 
-            />
-
+            {/* ✨ Inputs moved to the top! */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.modalInput}
@@ -137,6 +130,14 @@ export default function AddWordModal({ visible, onClose, onSave }) {
                 onChangeText={setDescription}
               />
             </View>
+
+            {/* 2️⃣ FlipCard is now below the inputs */}
+            <FlipCard 
+              word={word} 
+              description={description} 
+              imageUrl={selectedImage} 
+              forceFlip={forceFlip} 
+            />
 
             {/* Loading Indicator for Auto-Fetch */}
             {loading && !showAdvancedOptions && (
