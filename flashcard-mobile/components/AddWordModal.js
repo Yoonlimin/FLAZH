@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   StyleSheet, View, TextInput, TouchableOpacity, Text, Modal, 
-  TouchableWithoutFeedback, Keyboard, ScrollView, Image, ActivityIndicator 
+  TouchableWithoutFeedback, Keyboard, ScrollView, Image, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -84,7 +84,7 @@ export default function AddWordModal({ visible, onClose, onSave }) {
   const handleSave = () => {
     if (!word.trim()) return;
     onSave({ word: word.trim(), description: description.trim(), image: selectedImage });
-    resetModal();
+    handleClose();
   };
 
   const handleClose = () => {
@@ -99,126 +99,142 @@ export default function AddWordModal({ visible, onClose, onSave }) {
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={handleClose}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            
-            <TouchableOpacity style={styles.closeButton} onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
+      {/* ✨ Back to a regular View! */}
+      <View style={{ flex: 1 }}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              
+              {/* Note: The close button stays OUTSIDE the ScrollView so it's always pinned to the top right! */}
+              <TouchableOpacity style={styles.closeButton} onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>Create Flashcard</Text>
+              {/* ✨ 2. Added ScrollView right here for the inside of the box */}
+              <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 100 }}
+              >
+                <Text style={styles.modalTitle}>Create Flashcard</Text>
 
-            {/* ✨ Inputs moved to the top! */}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Target word or phrase..."
-                placeholderTextColor="#A0AEC0"
-                value={word}
-                onChangeText={setWord}
-                onBlur={handleAutoFetchImage} // 👈 Auto-fetches when leaving this input!
-              />
-            </View>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Target word or phrase..."
+                    placeholderTextColor="#A0AEC0"
+                    value={word}
+                    onChangeText={setWord}
+                    onBlur={handleAutoFetchImage} 
+                  />
+                </View>
 
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Description / Pronunciation (Optional)"
-                placeholderTextColor="#A0AEC0"
-                value={description}
-                onChangeText={setDescription}
-              />
-            </View>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Description / Pronunciation (Optional)"
+                    placeholderTextColor="#A0AEC0"
+                    value={description}
+                    onChangeText={setDescription}
+                  />
+                </View>
 
-            {/* 2️⃣ FlipCard is now below the inputs */}
-            <FlipCard 
-              word={word} 
-              description={description} 
-              imageUrl={selectedImage} 
-              forceFlip={forceFlip} 
-            />
+                <FlipCard 
+                  word={word} 
+                  description={description} 
+                  imageUrl={selectedImage} 
+                  forceFlip={forceFlip} 
+                />
 
-            {/* Loading Indicator for Auto-Fetch */}
-            {loading && !showAdvancedOptions && (
-              <ActivityIndicator size="small" color="#FFFFFF" style={{ marginBottom: 20 }} />
-            )}
+                {loading && !showAdvancedOptions && (
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ marginBottom: 20 }} />
+                )}
 
-            {/* 3️⃣ Fallback / Advanced Image Options Toggle */}
-            <TouchableOpacity 
-              style={styles.advancedOptionsToggle} 
-              onPress={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            >
-              <Text style={styles.advancedOptionsText}>
-                {showAdvancedOptions ? "Hide Image Options" : "Don't like the auto-image? Change it"}
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.advancedOptionsToggle} 
+                  onPress={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                >
+                  <Text style={styles.advancedOptionsText}>
+                    {showAdvancedOptions ? "Hide Image Options" : "Don't like the auto-image? Change it"}
+                  </Text>
+                </TouchableOpacity>
 
-            {showAdvancedOptions && (
-              <View style={styles.advancedOptionsContainer}>
-                
-                {/* Search Bar + Upload Button */}
-                <View style={styles.searchRow}>
-                  <View style={[styles.inputContainer, { flex: 1, marginBottom: 0, marginRight: 10, paddingVertical: 10 }]}>
-                    <TextInput
-                      style={styles.modalInput}
-                      placeholder="Search new keyword..."
-                      placeholderTextColor="#A0AEC0"
-                      value={imageKeyword}
-                      onChangeText={setImageKeyword}
-                      onSubmitEditing={handleManualSearch}
-                    />
+                {showAdvancedOptions && (
+                  <View style={styles.advancedOptionsContainer}>
+                    <View style={styles.searchRow}>
+                      <View style={[styles.inputContainer, { flex: 1, marginBottom: 0, marginRight: 10, paddingVertical: 10 }]}>
+                        <TextInput
+                          style={styles.modalInput}
+                          placeholder="Search new keyword..."
+                          placeholderTextColor="#A0AEC0"
+                          value={imageKeyword}
+                          onChangeText={setImageKeyword}
+                          onSubmitEditing={handleManualSearch}
+                        />
+                      </View>
+                      <TouchableOpacity style={styles.iconButton} onPress={handlePickImage}>
+                        <Ionicons name="image" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={[styles.iconButton, { marginLeft: 8 }]} onPress={handleManualSearch}>
+                        <Ionicons name="search" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.galleryContainer}>
+                      {loading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : images.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+                          {images.map((imgUrl, index) => (
+                            <TouchableOpacity key={index} onPress={() => handleSelectImage(imgUrl)}>
+                              <Image 
+                                source={{ uri: imgUrl }} 
+                                style={[styles.thumbnail, selectedImage === imgUrl && styles.thumbnailSelected]} 
+                              />
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      ) : (
+                        <Text style={styles.galleryHint}>No images found.</Text>
+                      )}
+                    </View>
                   </View>
-                  <TouchableOpacity style={styles.iconButton} onPress={handlePickImage}>
-                    <Ionicons name="image" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.iconButton, { marginLeft: 8 }]} onPress={handleManualSearch}>
-                    <Ionicons name="search" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
+                )}
 
-                {/* Gallery Scroll */}
-                <View style={styles.galleryContainer}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : images.length > 0 ? (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
-                      {images.map((imgUrl, index) => (
-                        <TouchableOpacity key={index} onPress={() => handleSelectImage(imgUrl)}>
-                          <Image 
-                            source={{ uri: imgUrl }} 
-                            style={[styles.thumbnail, selectedImage === imgUrl && styles.thumbnailSelected]} 
-                          />
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  ) : (
-                    <Text style={styles.galleryHint}>No images found.</Text>
-                  )}
-                </View>
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.8}>
-              <Text style={styles.saveButtonText}>Add to Flashbook</Text>
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.8}>
+                  <Text style={styles.saveButtonText}>Add to Flashbook</Text>
+                </TouchableOpacity>
+              
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'transparent', justifyContent: 'flex-end' },
-  modalContent: { 
-    width: '100%', backgroundColor: '#4A5D78', 
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, 
-    paddingHorizontal: 24, paddingBottom: 40, paddingTop: 24,
-    shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 10,
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', 
+    justifyContent: 'center', 
+    paddingHorizontal: 20 
   },
+  modalContent: { 
+    width: '100%', 
+    backgroundColor: '#4A5D78', 
+    borderRadius: 24, 
+    paddingHorizontal: 24, 
+    paddingBottom: 30, 
+    paddingTop: 24,
+    // ✨ 3. Added maxHeight so the box doesn't stretch off the screen!
+    maxHeight: '85%', 
+    shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 10,
+  },
+  
   closeButton: { position: 'absolute', top: 20, right: 20, zIndex: 10, padding: 4 },
-  modalTitle: { fontFamily: 'Raleway_700Bold', fontSize: 20, color: '#FFFFFF', textAlign: 'center', marginBottom: 20 },
+  modalTitle: { fontFamily: 'Raleway_700Bold', fontSize: 20, color: '#FFFFFF', textAlign: 'center', marginBottom: 20, marginTop: 10 },
   
   inputContainer: { backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16 },
   modalInput: { fontFamily: 'Raleway_500Medium', fontSize: 15, color: '#2D3748' },

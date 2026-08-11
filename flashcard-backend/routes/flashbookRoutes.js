@@ -35,4 +35,37 @@ router.get('/:userId', async (req, res) => {
   }
 });
 
+// ✨ 1. DELETE route for Flashbooks
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Make sure your DB connection variable (like 'pool' or 'db') matches what you use at the top of this file!
+    await pool.query('DELETE FROM flashbooks WHERE id = $1', [id]);
+    
+    res.status(200).json({ message: 'Flashbook deleted successfully' });
+  } catch (error) {
+    console.error("Error deleting flashbook:", error);
+    res.status(500).json({ error: 'Failed to delete flashbook' });
+  }
+});
+
+// ✨ 2. PUT route to toggle Pin Status
+router.put('/:id/pin', async (req, res) => {
+  const { id } = req.params;
+  const { isPinned } = req.body; 
+
+  try {
+    await pool.query(
+      'UPDATE flashbooks SET "isPinned" = $1 WHERE id = $2', 
+      [isPinned, id]
+    );
+    
+    res.status(200).json({ message: 'Pin status updated successfully', isPinned });
+  } catch (error) {
+    console.error("Error updating pin status:", error);
+    res.status(500).json({ error: 'Failed to update pin status' });
+  }
+});
+
 module.exports = router;

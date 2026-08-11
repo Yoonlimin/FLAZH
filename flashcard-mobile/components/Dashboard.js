@@ -6,7 +6,8 @@ import {
   Image, 
   FlatList, 
   TouchableOpacity, 
-  Dimensions 
+  Dimensions,
+  Alert // ✨ Added for delete confirmation
 } from 'react-native';
 import CreateFlashbookModal from './CreateFlashbookModal';
 import FlashbookDetail from './FlashbookDetail';
@@ -23,17 +24,10 @@ const COLUMN_SIZE = (SCREEN_WIDTH - 48 - 32) / 3;
 
 // Our perfect list of baby / pastel colors!
 const babyColors = [
-  '#B4D4FF', // Baby Blue
-  '#FFD1DC', // Pastel Pink
-  '#A8E6CF', // Mint Green
-  '#DCD0FF', // Lavender
-  '#FFDAC1', // Peach
-  '#FDFFB6', // Pale Yellow
-  '#E2F0CB', // Light Matcha
-  '#C5E3F6'  // Soft Cyan
+  '#B4D4FF', '#FFD1DC', '#A8E6CF', '#DCD0FF', 
+  '#FFDAC1', '#FDFFB6', '#E2F0CB', '#C5E3F6'
 ];
 
-// Helper function to grab a random color from the list
 const getRandomBabyColor = () => {
   return babyColors[Math.floor(Math.random() * babyColors.length)];
 };
@@ -42,6 +36,10 @@ export default function Dashboard({ user, onLogout }) {
   const [flashbooks, setFlashbooks] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState(null);
+
+  // ✨ State for Toggle Actions
+  const [actionMode, setActionMode] = useState(null); // 'delete' | 'pin' | null
+  const [selectedForDelete, setSelectedForDelete] = useState([]);
 
   const userId = user?.id || 1;
 
@@ -80,12 +78,74 @@ export default function Dashboard({ user, onLogout }) {
     }
   };
 
-  const gridData = [{ id: 'add-button', isAdd: true }, ...flashbooks];
+  // ✨ Handle Pin Toggling
+  const handleTogglePin = async (deck) => {
+    const updatedStatus = !deck.isPinned;
+    setFlashbooks(prev => prev.map(f => f.id === deck.id ? { ...f, isPinned: updatedStatus } : f));
+    
+    try {
+      await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/flashbooks/${deck.id}/pin`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPinned: updatedStatus })
+      });
+    } catch (error) {
+      console.log("Pin update error:", error);
+    }
+  };
+
+  // ✨ Handle Deleting
+  const handleDeleteSelected = () => {
+    Alert.alert(
+      "Delete Flashbooks",
+      `Are you sure you want to delete ${selectedForDelete.length} flashbook(s)?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              for (let id of selectedForDelete) {
+                await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/flashbooks/${id}`, { method: 'DELETE' });
+              }
+              setSelectedForDelete([]);
+              setActionMode(null);
+              fetchFlashbooks();
+            } catch (error) {
+              console.error("Error deleting flashbooks:", error);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // ✨ Handle Folder Clicks based on Mode
+  const handleFolderPress = (item) => {
+    if (actionMode === 'delete') {
+      setSelectedForDelete(prev => 
+        prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
+      );
+    } else if (actionMode === 'pin') {
+      handleTogglePin(item);
+    } else {
+      setSelectedDeck(item);
+    }
+  };
+
+  // ✨ Sort data: pinned items at the top
+  const sortedFlashbooks = [...flashbooks].sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+  const gridData = [{ id: 'add-button', isAdd: true }, ...sortedFlashbooks];
 
   const renderGridItem = ({ item }) => {
     if (item.isAdd) {
       return (
-        <TouchableOpacity style={styles.cardContainer} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={[styles.cardContainer, actionMode && { opacity: 0.5 }]} 
+          onPress={() => !actionMode && setModalVisible(true)} 
+          activeOpacity={0.8}
+        >
           <View style={[styles.folderWrapper, styles.addFolderWrapper]}>
             <View style={styles.folderBackAdd}>
                <View style={styles.folderTabAdd} />
@@ -102,14 +162,28 @@ export default function Dashboard({ user, onLogout }) {
     }
 
     const activeColor = item.color || '#B4D4FF';
+    const isSelected = selectedForDelete.includes(item.id);
 
     return (
       <TouchableOpacity 
         style={styles.cardContainer} 
         activeOpacity={0.8}
-        onPress={() => setSelectedDeck(item)}
+        onPress={() => handleFolderPress(item)}
       >
         <View style={styles.folderWrapper}>
+          
+          {/* ✨ Badges for Delete / Pin Mode */}
+          {actionMode === 'delete' && (
+            <View style={styles.badgeContainer}>
+              <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={22} color={isSelected ? "#FF4D4D" : "#A0AEC0"} />
+            </View>
+          )}
+          {item.isPinned && actionMode !== 'delete' && (
+            <View style={styles.badgeContainer}>
+              <Ionicons name="pricetag" size={18} color="#0A2540" style={{ transform: [{ rotate: '45deg' }] }} />
+            </View>
+          )}
+
           <View style={[styles.folderBack, { backgroundColor: activeColor }]}>
             <View style={[styles.folderTab, { backgroundColor: activeColor }]} />
           </View>
@@ -132,39 +206,66 @@ export default function Dashboard({ user, onLogout }) {
 
   return (
     <View style={styles.innerContainer}>
-      <View style={styles.headerBar}>
+      {/* Kept original Header UI */}
+      <View style={[styles.headerBar, { zIndex: 10 }]}>
         <Image source={require('../assets/logo.png')} style={styles.smallLogo} resizeMode="contain" />
-        <TouchableOpacity onPress={onLogout}>
+        
+        <TouchableOpacity 
+          onPress={onLogout} 
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} 
+          style={{ padding: 8 }}
+        >
+
           <Ionicons name="log-out-outline" size={28} color="#FF4D4D" />
         </TouchableOpacity>
       </View>
 
       <Text style={styles.logoText}>FLAZH</Text>
       
-      {/* ✨ Dynamic Text Title based on whether they have flashbooks or not */}
       <Text style={styles.screenSubtitle}>
         {flashbooks.length === 0 ? "Create your new flashbook!" : "Your flashbooks"}
       </Text>
 
+      {/* ✨ Inserted Toggle Control here */}
+      {flashbooks.length > 0 && (
+        <View style={styles.toggleWrapper}>
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity 
+              style={[styles.toggleButton, actionMode === 'delete' && styles.toggleButtonActive]}
+              onPress={() => {
+                setActionMode(prev => prev === 'delete' ? null : 'delete');
+                setSelectedForDelete([]);
+              }}
+            >
+              <Ionicons name="checkbox-outline" size={20} color={actionMode === 'delete' ? "#0A2540" : "#8E9BB0"} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.toggleButton, actionMode === 'pin' && styles.toggleButtonActive]}
+              onPress={() => {
+                setActionMode(prev => prev === 'pin' ? null : 'pin');
+                setSelectedForDelete([]);
+              }}
+            >
+              <Ionicons name="pricetag-outline" size={20} color={actionMode === 'pin' ? "#0A2540" : "#8E9BB0"} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {flashbooks.length === 0 ? (
         <View style={styles.emptyStateContainer}>
           <View style={styles.folderCardGraphic}>
-            
-            {/* ✨ New Beautiful 3D Folder for the Empty State */}
             <View style={styles.emptyFolderWrapper}>
-              {/* Layer 1: Back */}
               <View style={[styles.emptyFolderBack, { backgroundColor: '#8E9BB0' }]}>
                 <View style={[styles.emptyFolderTab, { backgroundColor: '#8E9BB0' }]} />
               </View>
-              {/* Layer 2: Paper */}
               <View style={styles.emptyFolderPaper}>
                 <View style={styles.emptyPaperLineLong} />
                 <View style={styles.emptyPaperLineShort} />
               </View>
-              {/* Layer 3: Front */}
               <View style={[styles.emptyFolderFront, { backgroundColor: '#8E9BB0E6' }]} />
             </View>
-
           </View>
           <TouchableOpacity style={styles.newButton} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
             <Text style={styles.newButtonText}>New</Text>
@@ -184,6 +285,13 @@ export default function Dashboard({ user, onLogout }) {
         />
       )}
 
+      {/* ✨ Floating Delete Button */}
+      {actionMode === 'delete' && selectedForDelete.length > 0 && (
+        <TouchableOpacity style={styles.floatingDeleteBtn} onPress={handleDeleteSelected} activeOpacity={0.9}>
+          <Text style={styles.floatingDeleteText}>Delete Selected ({selectedForDelete.length})</Text>
+        </TouchableOpacity>
+      )}
+
       <CreateFlashbookModal 
         visible={modalVisible} 
         onClose={() => setModalVisible(false)} 
@@ -198,16 +306,31 @@ const styles = StyleSheet.create({
   headerBar: { width: '100%', paddingHorizontal: 24, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   smallLogo: { width: 100, height: 60, marginLeft: -20 },
   logoutLink: { fontFamily: 'Raleway_500Medium', fontSize: 14, color: '#FF4D4D' },
-  logoText: { fontFamily: 'Raleway_700Bold', fontSize: 36, color: '#0A2540', letterSpacing: 1.5, textAlign: 'center', marginTop: 10 },
-  screenSubtitle: { fontFamily: 'Raleway_500Medium', fontSize: 18, color: '#1A202C', textAlign: 'center', marginTop: 10, marginBottom: 20 },
+  
+  // ✨ Reduced Top Margin so it moves up slightly
+  logoText: { fontFamily: 'Raleway_700Bold', fontSize: 36, color: '#0A2540', letterSpacing: 1.5, textAlign: 'center', bottom: 54 },
+  screenSubtitle: { fontFamily: 'Raleway_500Medium', fontSize: 18, color: '#1A202C', textAlign: 'center', marginTop: 5, bottom: 48 },
 
-  emptyStateContainer: { alignItems: 'center', paddingHorizontal: 32, marginTop: 10 },
+  // ✨ Toggle Styles
+  toggleWrapper: { alignItems: 'center', marginBottom: 20},
+  toggleContainer: { flexDirection: 'row', backgroundColor: '#F2F4F7', borderRadius: 8, padding: 4, width: 160 },
+  toggleButton: { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: 6 },
+  toggleButtonActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+
+  // ✨ Floating Delete Button
+  floatingDeleteBtn: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: '#FF4D4D', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 5 },
+  floatingDeleteText: { color: '#FFF', fontFamily: 'Raleway_700Bold', fontSize: 16 },
+
+  // ✨ Badge for Folders (Checkmark/Pin)
+  badgeContainer: { position: 'absolute', top: -6, right: -6, zIndex: 10, backgroundColor: '#FFF', borderRadius: 12, padding: 2 },
+
+  emptyStateContainer: { alignItems: 'center', paddingHorizontal: 32, marginTop: 60 }, // ✨ Increased from 10 to 60!
   folderCardGraphic: { width: '100%', height: 260, backgroundColor: '#F2F4F7', borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
   newButton: { backgroundColor: '#0F294A', paddingVertical: 10, paddingHorizontal: 36, borderRadius: 10, marginBottom: 16 },
   newButtonText: { fontFamily: 'Raleway_700Bold', color: '#FFFFFF', fontSize: 16 },
   emptyStateDescription: { fontFamily: 'Raleway_500Medium', fontSize: 13, color: '#A0AEC0', textAlign: 'center', lineHeight: 18 },
 
-  gridContent: { paddingHorizontal: 24, paddingBottom: 40 },
+  gridContent: { paddingHorizontal: 24, paddingBottom: 100 },
   cardContainer: { width: COLUMN_SIZE, alignItems: 'center', marginBottom: 20, marginHorizontal: 5 },
   
   // Grid Folder Styles
@@ -234,7 +357,6 @@ const styles = StyleSheet.create({
   plusSign: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold', marginTop: -2 },
   deckTitle: { fontFamily: 'Raleway_500Medium', fontSize: 12, color: '#1A202C', marginTop: 12, textAlign: 'center' },
 
-  // ✨ Empty State Folder Styles (Larger version)
   emptyFolderWrapper: {
     width: 140,
     height: 110,

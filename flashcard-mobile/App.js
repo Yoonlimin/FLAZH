@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Raleway_700Bold, Raleway_500Medium, Raleway_600SemiBold } from '@expo-google-fonts/raleway';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -62,24 +62,26 @@ export default function App() {
   if (!fontsLoaded || currentScreen === 'loading') return null;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
 
-      {currentScreen === 'welcome' && (
-        <WelcomePage onGetStarted={() => setCurrentScreen('signup')} />
-      )}
+        {currentScreen === 'welcome' && (
+          <WelcomePage onGetStarted={() => setCurrentScreen('signup')} />
+        )}
 
-      {currentScreen === 'signup' && (
-        <SignUp 
-          onBack={() => setCurrentScreen('welcome')} 
-          onAuthSuccess={handleAuthSuccess} // 👈 3. Make sure prop name matches!
-        />
-      )}
+        {currentScreen === 'signup' && (
+          <SignUp 
+            onBack={() => setCurrentScreen('welcome')} 
+            onAuthSuccess={handleAuthSuccess} 
+          />
+        )}
 
-      {currentScreen === 'dashboard' && (
-        <Dashboard user={user} onLogout={handleLogout} />
-      )}
-    </SafeAreaView>
+        {currentScreen === 'dashboard' && (
+          <Dashboard user={user} onLogout={handleLogout} />
+        )}
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
