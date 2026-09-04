@@ -84,17 +84,24 @@ export default function PracticeModal({ visible, words, onClose }) {
         <View style={styles.cardContainer}>
           <TouchableOpacity activeOpacity={1} onPress={flipCard} style={styles.cardWrapper}>
             
-            {/* ✨ FRONT OF CARD (Photo) */}
+            {/* ✨ FRONT OF CARD (Photo OR Meaning) */}
             <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
               <View style={styles.cardContent}>
+                
                 {currentCard.image_url ? (
+                  // SCENARIO 1: There is an image
                   <Image source={{ uri: currentCard.image_url }} style={styles.cardImage} />
                 ) : (
-                  <View style={styles.placeholderImage}>
-                    <Ionicons name="image-outline" size={64} color="#A0AEC0" />
-                    <Text style={styles.placeholderText}>No Image Available</Text>
+                  // ✨ SCENARIO 2: No image! Show the Meaning instead.
+                  <View style={styles.textOnlyFront}>
+                    {currentCard.meaning ? (
+                      <Text style={styles.meaningTextOnly}>{currentCard.meaning}</Text>
+                    ) : (
+                      <Text style={styles.noMeaningText}>No meaning added</Text>
+                    )}
                   </View>
                 )}
+                
                 <Text style={styles.tapPrompt}>Tap to reveal word</Text>
               </View>
             </Animated.View>
@@ -103,8 +110,11 @@ export default function PracticeModal({ visible, words, onClose }) {
             <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
               <View style={styles.cardContent}>
                 <Text style={styles.cardWord}>{currentCard.word}</Text>
-                <Text style={styles.cardDescription}>{currentCard.description || "No description"}</Text>
-                <Text style={styles.tapPrompt}>Tap to see image</Text>
+                {/* Only render description if it exists */}
+                {currentCard.description ? (
+                  <Text style={styles.cardDescription}>{currentCard.description}</Text>
+                ) : null}
+                <Text style={styles.tapPrompt}>Tap to see prompt</Text>
               </View>
             </Animated.View>
 
@@ -145,7 +155,7 @@ const styles = StyleSheet.create({
   
   cardContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   
-  // ✨ Animation Wrapper Styles
+  // Animation Wrapper Styles
   cardWrapper: {
     width: '100%',
     height: 420,
@@ -155,8 +165,8 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     height: '100%',
-    position: 'absolute', // Both sides stack on top of each other
-    backfaceVisibility: 'hidden', // Hides the side facing away
+    position: 'absolute', 
+    backfaceVisibility: 'hidden', 
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
     shadowColor: '#000',
@@ -166,15 +176,19 @@ const styles = StyleSheet.create({
     elevation: 10,
     padding: 24,
   },
-  cardFront: { zIndex: 1 }, // Front stays on top initially
+  cardFront: { zIndex: 1 }, 
   cardBack: { zIndex: 0 },
   
   cardContent: { flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' },
   cardImage: { width: '100%', height: '80%', resizeMode: 'contain', marginBottom: 20 },
-  placeholderImage: { flex: 1, justifyContent: 'center', alignItems: 'center', opacity: 0.6 },
-  placeholderText: { fontFamily: 'Raleway_500Medium', fontSize: 16, color: '#A0AEC0', marginTop: 12 },
+  
+  // ✨ New Text-Only Styles for the Front
+  textOnlyFront: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', paddingHorizontal: 10, marginBottom: 20 },
+  meaningTextOnly: { fontFamily: 'Raleway_700Bold', fontSize: 36, color: '#0A2540', textAlign: 'center' },
+  noMeaningText: { fontFamily: 'Raleway_500Medium', fontSize: 18, color: '#A0AEC0', textAlign: 'center', fontStyle: 'italic' },
+  
   cardWord: { fontFamily: 'Raleway_700Bold', fontSize: 42, color: '#0A2540', textAlign: 'center', marginBottom: 12 },
-  cardDescription: { fontFamily: 'Raleway_500Medium', fontSize: 24, color: '#4A5568', textAlign: 'center' },
+  cardDescription: { fontFamily: 'Raleway_500Medium', fontSize: 24, color: '#4A5568', textAlign: 'center', marginBottom: 20 },
   tapPrompt: { position: 'absolute', bottom: 10, fontFamily: 'Raleway_500Medium', fontSize: 14, color: '#A0AEC0' },
   
   navContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 40, gap: 24 },

@@ -5,11 +5,11 @@ const pool = require('../config/db');
 // Add a new flashcard
 router.post('/', async (req, res) => {
   try {
-    const { flashbook_id, word, description, image_url } = req.body;
+    const { flashbook_id, word, description, meaning, image_url } = req.body;
     
     const newCard = await pool.query( 
-      'INSERT INTO flashcards (flashbook_id, word, description, image_url) VALUES ($1, $2, $3, $4) RETURNING *',
-      [flashbook_id, word, description, image_url]
+      'INSERT INTO flashcards (flashbook_id, word, description, meaning, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [flashbook_id, word, description, meaning, image_url]
     );
     
     res.json(newCard.rows[0]);
@@ -38,11 +38,11 @@ router.get('/:deckId', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { word, description, image_url } = req.body;
+    const { word, description, meaning, image_url } = req.body;
     
     const updatedCard = await pool.query(
-      'UPDATE flashcards SET word = $1, description = $2, image_url = $3 WHERE id = $4 RETURNING *',
-      [word, description, image_url, id]
+      'UPDATE flashcards SET word = $1, description = $2, meaning = $3, image_url = $4 WHERE id = $5 RETURNING *',
+      [word, description, meaning, image_url, id]
     );
     
     if (updatedCard.rows.length === 0) {

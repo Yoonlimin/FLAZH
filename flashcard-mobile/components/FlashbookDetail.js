@@ -71,6 +71,7 @@ export default function FlashbookDetail({ deck, onBack }) {
         onBack={() => setEditingWord(null)} // Clicking back simply returns to the list
         onSave={handleEditSave}
         onDelete={handleDelete}
+        deckType={deck.deck_type}
       />
     );
   }
@@ -128,6 +129,7 @@ export default function FlashbookDetail({ deck, onBack }) {
       <AddWordModal
         visible={addWordVisible}
         onClose={() => setAddWordVisible(false)}
+        deckType={deck.deck_type}
         onSave={async (newCard) => {
           try {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/flashcards`, {
@@ -137,6 +139,7 @@ export default function FlashbookDetail({ deck, onBack }) {
                 flashbook_id: deck.id,
                 word: newCard.word,
                 description: newCard.description,
+                meaning: newCard.meaning,
                 image_url: newCard.image
               }),
             });
@@ -149,6 +152,7 @@ export default function FlashbookDetail({ deck, onBack }) {
           }
         }}
       />
+      
 
       <PracticeModal 
         visible={practiceVisible} 

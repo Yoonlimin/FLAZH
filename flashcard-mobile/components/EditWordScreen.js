@@ -8,29 +8,32 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker'; 
 import FlazhLogo from './FlazhLogo';
 
-// 🔑 Pexels API Key
 const PEXELS_API_KEY = 'rA5VqQSI1v4mpdF5QeVX56bpsQ1DE4BkIIyjQHFDVtk35PecRZILieDH';
 
-export default function EditWordScreen({ wordData, onBack, onSave, onDelete }) {
+// ✨ NEW: Accept deckType as a prop
+export default function EditWordScreen({ wordData, onBack, onSave, onDelete, deckType }) {
   const [word, setWord] = useState('');
   const [description, setDescription] = useState('');
+  const [meaning, setMeaning] = useState(''); 
   const [image, setImage] = useState('');
   
-  // ✨ New state for the image search feature
   const [showSearch, setShowSearch] = useState(false);
   const [imageKeyword, setImageKeyword] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // ✨ NEW: Check if it is a text-only deck
+  const isSimpleDeck = deckType === 'simple'; 
+
   useEffect(() => {
     if (wordData) {
       setWord(wordData.word || '');
       setDescription(wordData.description || '');
+      setMeaning(wordData.meaning || ''); 
       setImage(wordData.image_url || '');
     }
   }, [wordData]);
 
-  // 1️⃣ Upload from Device
   const pickImage = async () => {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
@@ -42,14 +45,13 @@ export default function EditWordScreen({ wordData, onBack, onSave, onDelete }) {
 
       if (!result.canceled) {
         setImage(result.assets[0].uri);
-        setShowSearch(false); // Hide search if they upload
+        setShowSearch(false);
       }
     } catch (error) {
       console.error("Error picking image:", error);
     }
   };
 
-  // 2️⃣ Search Pexels API
   const handleSearchImage = async () => {
     if (!imageKeyword.trim()) return;
     setLoading(true);
@@ -70,17 +72,22 @@ export default function EditWordScreen({ wordData, onBack, onSave, onDelete }) {
     setLoading(false);
   };
 
-  // 3️⃣ Menu Pop-up
   const handleChangePhotoPress = () => {
-    Alert.alert(
-      "Update Image",
-      "How would you like to add a photo?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Upload from Device", onPress: pickImage },
-        { text: "Search Online", onPress: () => setShowSearch(true) }
-      ]
-    );
+    const options = [
+      { text: "Cancel", style: "cancel" },
+      { text: "Upload from Device", onPress: pickImage },
+      { text: "Search Online", onPress: () => setShowSearch(true) }
+    ];
+
+    if (image) {
+      options.push({ 
+        text: "Remove Image", 
+        onPress: () => setImage(''), 
+        style: "destructive" 
+      });
+    }
+
+    Alert.alert("Update Image", "How would you like to add or change the photo?", options);
   };
 
   const handleDeletePress = () => {
@@ -100,7 +107,6 @@ export default function EditWordScreen({ wordData, onBack, onSave, onDelete }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ✨ 1. Changed to a regular View so it stops auto-jumping! */}
       <View style={styles.keyboardView}>
         
         <View style={styles.titleHeaderBar}>
@@ -112,7 +118,7 @@ export default function EditWordScreen({ wordData, onBack, onSave, onDelete }) {
 
         <ScrollView 
           style={styles.scrollContainer} 
-          contentContainerStyle={{ paddingBottom: 290 }} 
+          contentContainerStyle={{ paddingBottom: 30 }} 
           showsVerticalScrollIndicator={false} 
           keyboardShouldPersistTaps="handled"
         >
@@ -125,79 +131,103 @@ export default function EditWordScreen({ wordData, onBack, onSave, onDelete }) {
             placeholderTextColor="#A0AEC0"
           />
           
-          <Text style={styles.inputLabel}>Description / Translation</Text>
+          <Text style={styles.inputLabel}>Description / Pronunciation</Text>
           <TextInput 
             style={styles.input} 
             value={description} 
             onChangeText={setDescription} 
             placeholderTextColor="#A0AEC0"
           />
-          
-          <Text style={styles.inputLabel}>Image</Text>
-          <View style={styles.imagePreviewContainer}>
-            {image ? (
-              <Image source={{ uri: image }} style={styles.imagePreview} />
-            ) : (
-              <View style={styles.placeholderImage}>
-                <Ionicons name="image-outline" size={48} color="#A0AEC0" />
-              </View>
-            )}
-            
-            <TouchableOpacity 
-              style={styles.imageChangeOverlay} 
-              activeOpacity={0.8}
-              onPress={handleChangePhotoPress}
-            >
-              <View style={styles.imageChangeBadge}>
-                <Ionicons name="camera" size={20} color="#FFFFFF" />
-                <Text style={styles.imageChangeText}>Change</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
 
-          {/* ✨ New Search Online UI (Only shows if they select "Search Online") */}
-          {showSearch && (
-            <View style={styles.searchSection}>
-              <View style={styles.searchRow}>
-                <TextInput 
-                  style={[styles.input, { flex: 1, marginBottom: 0 }]} 
-                  placeholder="Search keywords (e.g. dog, running)..." 
-                  value={imageKeyword}
-                  onChangeText={setImageKeyword}
-                  onSubmitEditing={handleSearchImage}
-                  placeholderTextColor="#A0AEC0"
-                />
-                <TouchableOpacity style={styles.searchIconButton} onPress={handleSearchImage}>
-                  <Ionicons name="search" size={20} color="#FFFFFF" />
+          <Text style={styles.inputLabel}>Meaning</Text>
+          <TextInput 
+            style={styles.input} 
+            value={meaning} 
+            onChangeText={setMeaning} 
+            placeholder="e.g., Station..."
+            placeholderTextColor="#A0AEC0"
+          />
+          
+          {/* ✨ NEW: Hide entire image section if it is a simple deck */}
+          {!isSimpleDeck && (
+            <>
+              <Text style={styles.inputLabel}>Image</Text>
+              <View style={styles.imagePreviewContainer}>
+                {image ? (
+                  <Image source={{ uri: image }} style={styles.imagePreview} />
+                ) : (
+                  <View style={styles.placeholderImage}>
+                    <Ionicons name="image-outline" size={48} color="#A0AEC0" />
+                  </View>
+                )}
+                
+                <TouchableOpacity 
+                  style={styles.imageChangeOverlay} 
+                  activeOpacity={0.8}
+                  onPress={handleChangePhotoPress}
+                >
+                  <View style={styles.imageChangeBadge}>
+                    <Ionicons name="camera" size={20} color="#FFFFFF" />
+                    <Text style={styles.imageChangeText}>Change</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
-              
-              {loading ? (
-                <ActivityIndicator size="small" color="#0A2540" style={{ marginVertical: 16 }} />
-              ) : searchResults.length > 0 ? (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
-                  {searchResults.map((imgUrl, index) => (
-                    <TouchableOpacity 
-                      key={index} 
-                      onPress={() => {
-                        setImage(imgUrl);
-                        setShowSearch(false); // Hide the search bar once they pick one
-                      }}
-                    >
-                      <Image source={{ uri: imgUrl }} style={styles.thumbnail} />
+
+              {showSearch && (
+                <View style={styles.searchSection}>
+                  <View style={styles.searchRow}>
+                    <TextInput 
+                      style={[styles.input, { flex: 1, marginBottom: 0 }]} 
+                      placeholder="Search keywords (e.g. dog, running)..." 
+                      value={imageKeyword}
+                      onChangeText={setImageKeyword}
+                      onSubmitEditing={handleSearchImage}
+                      placeholderTextColor="#A0AEC0"
+                    />
+                    <TouchableOpacity style={styles.searchIconButton} onPress={handleSearchImage}>
+                      <Ionicons name="search" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              ) : null}
-            </View>
+                  </View>
+                  
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#0A2540" style={{ marginVertical: 16 }} />
+                  ) : searchResults.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galleryScroll}>
+                      {searchResults.map((imgUrl, index) => (
+                        <TouchableOpacity 
+                          key={index} 
+                          onPress={() => {
+                            setImage(imgUrl);
+                            setShowSearch(false);
+                          }}
+                        >
+                          <Image source={{ uri: imgUrl }} style={styles.thumbnail} />
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                </View>
+              )}
+            </>
           )}
 
-          <View style={[styles.buttonRow, { marginTop: showSearch ? 10 : 20 }]}>
+          {/* ✨ NEW: Check if simple deck is active for margin logic */}
+          <View style={[styles.buttonRow, { marginTop: showSearch && !isSimpleDeck ? 10 : 20 }]}>
             <TouchableOpacity style={styles.deleteButton} onPress={handleDeletePress}>
               <Text style={styles.deleteText}>Delete</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveButton} onPress={() => onSave({ ...wordData, word, description, image_url: image })}>
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={() => onSave({ 
+                ...wordData, 
+                word, 
+                description, 
+                meaning, 
+                // ✨ Ensure no image saves for simple decks
+                image_url: isSimpleDeck ? null : image 
+              })}
+            >
               <Text style={styles.saveText}>Save Changes</Text>
             </TouchableOpacity>
           </View>
@@ -225,7 +255,6 @@ const styles = StyleSheet.create({
   imageChangeBadge: { flexDirection: 'row', backgroundColor: 'rgba(10, 37, 64, 0.8)', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, alignItems: 'center' },
   imageChangeText: { fontFamily: 'Raleway_700Bold', color: '#FFFFFF', fontSize: 14, marginLeft: 8 },
   
-  // ✨ New Search Styles
   searchSection: { marginTop: 16, backgroundColor: '#FAFAFA', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#E2E8F0' },
   searchRow: { flexDirection: 'row', alignItems: 'center' },
   searchIconButton: { backgroundColor: '#0A2540', width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginLeft: 10 },

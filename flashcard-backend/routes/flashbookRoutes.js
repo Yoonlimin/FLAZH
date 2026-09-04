@@ -4,15 +4,15 @@ const pool = require('../config/db');
 
 // Create Flashbook
 router.post('/', async (req, res) => {
-  // ✨ Includes the 'color' we added earlier!
-  const { userId, title, color } = req.body; 
+  const { userId, title, color, deckType } = req.body; 
   
   if (!title) return res.status(400).json({ error: 'Flashbook title is required' });
 
   try {
     const newDeck = await pool.query(
-      'INSERT INTO flashbooks (user_id, title, color) VALUES ($1, $2, $3) RETURNING *',
-      [userId, title.trim(), color]
+      // ✨ Notice the double quotes around "isPinned" inside the single quotes!
+      'INSERT INTO flashbooks (user_id, title, color, "isPinned", deck_type) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [userId, title.trim(), color, false, deckType || 'picture']
     );
     return res.status(201).json(newDeck.rows[0]);
   } catch (error) {
@@ -20,7 +20,6 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
 // Get All Flashbooks for User
 router.get('/:userId', async (req, res) => {
   const { userId } = req.params;
