@@ -3,6 +3,7 @@
     "name": "flashcard-mobile",
     "slug": "flashcard-mobile",
     "version": "1.0.0",
+    "scheme": "flazh",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,9 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yoonlimin.flashcardmobile"
     },
     "android": {
+      "package": "com.yoonlimin.flashcardmobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -29,6 +32,11 @@
       "expo-font",
       "expo-web-browser",
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0fd5eda2-c6dd-4e1e-bc27-1a17d6e8547c"
+      }
+    }
   }
 }
