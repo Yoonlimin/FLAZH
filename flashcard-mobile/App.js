@@ -9,7 +9,7 @@ import SignUp from './components/SignUp';
 import Dashboard from './components/Dashboard';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('loading'); 
+  const [currentScreen, setCurrentScreen] = useState('loading');
   const [user, setUser] = useState(null);
 
   let [fontsLoaded] = useFonts({
@@ -47,7 +47,7 @@ export default function App() {
       setUser(userData);
 
       // 2. FORCE SCREEN STATE CHANGE TO DASHBOARD!
-      setCurrentScreen('dashboard'); 
+      setCurrentScreen('dashboard');
     } catch (e) {
       console.log("Error storing user session", e);
     }
@@ -71,9 +71,9 @@ export default function App() {
         )}
 
         {currentScreen === 'signup' && (
-          <SignUp 
-            onBack={() => setCurrentScreen('welcome')} 
-            onAuthSuccess={handleAuthSuccess} 
+          <SignUp
+            onBack={() => setCurrentScreen('welcome')}
+            onAuthSuccess={handleAuthSuccess}
           />
         )}
 
@@ -88,6 +88,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: '#FFFFFF',
   },
 });

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, View, TextInput, TouchableOpacity, Text, Modal, 
-  TouchableWithoutFeedback, Keyboard, ScrollView, Image, ActivityIndicator
+import {
+  StyleSheet, View, TextInput, TouchableOpacity, Text, Modal,
+  Pressable, ScrollView, Image, Alert, Platform, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import FlipCard from './FlipCard'; 
+import FlipCard from './FlipCard';
 
 const PEXELS_API_KEY = 'rA5VqQSI1v4mpdF5QeVX56bpsQ1DE4BkIIyjQHFDVtk35PecRZILieDH';
 
@@ -14,7 +14,7 @@ export default function AddWordModal({ visible, onClose, onSave, deckType }) {
   const [word, setWord] = useState('');
   const [description, setDescription] = useState('');
   const [meaning, setMeaning] = useState('');
-  
+
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,6 @@ export default function AddWordModal({ visible, onClose, onSave, deckType }) {
 
   const handleManualSearch = () => {
     if (!imageKeyword.trim()) return;
-    Keyboard.dismiss();
     fetchPexels(imageKeyword.trim());
   };
 
@@ -43,7 +42,7 @@ export default function AddWordModal({ visible, onClose, onSave, deckType }) {
         headers: { Authorization: PEXELS_API_KEY }
       });
       const data = await response.json();
-      
+
       if (data.photos && data.photos.length > 0) {
         const photoUrls = data.photos.map(photo => photo.src.medium);
         setImages(photoUrls);
@@ -77,10 +76,10 @@ export default function AddWordModal({ visible, onClose, onSave, deckType }) {
 
   const handleSave = () => {
     if (!word.trim()) return;
-    onSave({ 
-      word: word.trim(), 
-      description: description.trim(), 
-      meaning: meaning.trim(), 
+    onSave({
+      word: word.trim(),
+      description: description.trim(),
+      meaning: meaning.trim(),
       image: isSimpleDeck ? null : selectedImage // Ensure no image saves for simple decks
     });
     handleClose();
@@ -98,141 +97,180 @@ export default function AddWordModal({ visible, onClose, onSave, deckType }) {
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={handleClose}>
-      <View style={{ flex: 1 }}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              
-              <TouchableOpacity style={styles.closeButton} onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
+      <Pressable style={styles.modalOverlay} onPress={handleClose}>
+        <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
 
-              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 100 }}>
-                <Text style={styles.modalTitle}>Create Flashcard</Text>
+          <TouchableOpacity style={styles.closeButton} onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Ionicons name="close" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
 
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="Word (on the back)"
-                    placeholderTextColor="#A0AEC0"
-                    value={word}
-                    onChangeText={setWord}
-                    onBlur={handleAutoFetchImage} 
-                  />
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 100 }}>
+            <Text style={styles.modalTitle}>Create Flashcard</Text>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Word (on the back)"
+                placeholderTextColor="#A0AEC0"
+                value={word}
+                onChangeText={setWord}
+                onBlur={handleAutoFetchImage}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Pronunciation (Optional) "
+                placeholderTextColor="#A0AEC0"
+                value={description}
+                onChangeText={setDescription}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Words (on the front)"
+                placeholderTextColor="#A0AEC0"
+                value={meaning}
+                onChangeText={setMeaning}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <FlipCard
+              word={word}
+              description={description}
+              meaning={meaning}
+              imageUrl={isSimpleDeck ? null : selectedImage} // ✨ Hide image on preview
+              forceFlip={forceFlip}
+            />
+
+            {loading && !showAdvancedOptions && !isSimpleDeck && (
+              <ActivityIndicator size="small" color="#FFFFFF" style={{ marginBottom: 20 }} />
+            )}
+
+            {/* ✨ Hide all image controls if it's a simple deck! */}
+            {!isSimpleDeck && (
+              <>
+                <View style={styles.imageControlsRow}>
+                  <TouchableOpacity style={styles.advancedOptionsToggle} onPress={() => setShowAdvancedOptions(!showAdvancedOptions)}>
+                    <Text style={styles.advancedOptionsText}>
+                      {showAdvancedOptions ? "Hide Image Options" : "Change Image"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {selectedImage && (
+                    <TouchableOpacity style={styles.advancedOptionsToggle} onPress={() => setSelectedImage(null)}>
+                      <Text style={[styles.advancedOptionsText, { color: '#FF4D4D', marginLeft: 15 }]}>
+                        Remove Image
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="Pronunciation (Optional) "
-                    placeholderTextColor="#A0AEC0"
-                    value={description}
-                    onChangeText={setDescription}
-                  />
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.modalInput}
-                    placeholder="Words (on the front)"
-                    placeholderTextColor="#A0AEC0"
-                    value={meaning}
-                    onChangeText={setMeaning}
-                  />
-                </View>
-
-                <FlipCard 
-                  word={word} 
-                  description={description} 
-                  meaning={meaning} 
-                  imageUrl={isSimpleDeck ? null : selectedImage} // ✨ Hide image on preview
-                  forceFlip={forceFlip} 
-                />
-
-                {loading && !showAdvancedOptions && !isSimpleDeck && (
-                  <ActivityIndicator size="small" color="#FFFFFF" style={{ marginBottom: 20 }} />
-                )}
-
-                {/* ✨ Hide all image controls if it's a simple deck! */}
-                {!isSimpleDeck && (
-                  <>
-                    <View style={styles.imageControlsRow}>
-                      <TouchableOpacity style={styles.advancedOptionsToggle} onPress={() => setShowAdvancedOptions(!showAdvancedOptions)}>
-                        <Text style={styles.advancedOptionsText}>
-                          {showAdvancedOptions ? "Hide Image Options" : "Change Image"}
-                        </Text>
+                {showAdvancedOptions && (
+                  <View style={styles.advancedOptionsContainer}>
+                    <View style={styles.searchRow}>
+                      <View style={[styles.inputContainer, { flex: 1, marginBottom: 0, marginRight: 10, paddingVertical: 10 }]}>
+                        <TextInput
+                          style={styles.modalInput}
+                          placeholder="Search new keyword..."
+                          placeholderTextColor="#A0AEC0"
+                          value={imageKeyword}
+                          onChangeText={setImageKeyword}
+                          onSubmitEditing={handleManualSearch}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      <TouchableOpacity style={styles.iconButton} onPress={handlePickImage}>
+                        <Ionicons name="image" size={20} color="#FFFFFF" />
                       </TouchableOpacity>
-
-                      {selectedImage && (
-                        <TouchableOpacity style={styles.advancedOptionsToggle} onPress={() => setSelectedImage(null)}>
-                          <Text style={[styles.advancedOptionsText, { color: '#FF4D4D', marginLeft: 15 }]}>
-                            Remove Image
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity style={[styles.iconButton, { marginLeft: 8 }]} onPress={handleManualSearch}>
+                        <Ionicons name="search" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
                     </View>
 
-                    {showAdvancedOptions && (
-                      <View style={styles.advancedOptionsContainer}>
-                        <View style={styles.searchRow}>
-                          <View style={[styles.inputContainer, { flex: 1, marginBottom: 0, marginRight: 10, paddingVertical: 10 }]}>
-                            <TextInput
-                              style={styles.modalInput}
-                              placeholder="Search new keyword..."
-                              placeholderTextColor="#A0AEC0"
-                              value={imageKeyword}
-                              onChangeText={setImageKeyword}
-                              onSubmitEditing={handleManualSearch}
-                            />
-                          </View>
-                          <TouchableOpacity style={styles.iconButton} onPress={handlePickImage}>
-                            <Ionicons name="image" size={20} color="#FFFFFF" />
-                          </TouchableOpacity>
-                          <TouchableOpacity style={[styles.iconButton, { marginLeft: 8 }]} onPress={handleManualSearch}>
-                            <Ionicons name="search" size={20} color="#FFFFFF" />
-                          </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.galleryContainer}>
-                          {loading ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : images.length > 0 ? (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
-                              {images.map((imgUrl, index) => (
-                                <TouchableOpacity key={index} onPress={() => handleSelectImage(imgUrl)}>
-                                  <Image source={{ uri: imgUrl }} style={[styles.thumbnail, selectedImage === imgUrl && styles.thumbnailSelected]} />
-                                </TouchableOpacity>
-                              ))}
-                            </ScrollView>
-                          ) : (
-                            <Text style={styles.galleryHint}>No images found.</Text>
-                          )}
-                        </View>
-                      </View>
-                    )}
-                  </>
+                    <View style={styles.galleryContainer}>
+                      {loading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : images.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+                          {images.map((imgUrl, index) => (
+                            <TouchableOpacity key={index} onPress={() => handleSelectImage(imgUrl)}>
+                              <Image source={{ uri: imgUrl }} style={[styles.thumbnail, selectedImage === imgUrl && styles.thumbnailSelected]} />
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      ) : (
+                        <Text style={styles.galleryHint}>No images found.</Text>
+                      )}
+                    </View>
+                  </View>
                 )}
+              </>
+            )}
 
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.8}>
-                  <Text style={styles.saveButtonText}>Add to Flashbook</Text>
-                </TouchableOpacity>
-              
-              </ScrollView>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </View>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.8}>
+              <Text style={styles.saveButtonText}>Add to Flashbook</Text>
+            </TouchableOpacity>
+
+          </ScrollView>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'center', paddingHorizontal: 20 },
-  modalContent: { width: '100%', backgroundColor: '#4A5D78', borderRadius: 24, paddingHorizontal: 24, paddingBottom: 30, paddingTop: 24, maxHeight: '85%', shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 10 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    paddingHorizontal: 20
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: '#4A5D78',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 30,
+    paddingTop: 24,
+    maxHeight: '85%',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10
+  },
   closeButton: { position: 'absolute', top: 20, right: 20, zIndex: 10, padding: 4 },
   modalTitle: { fontFamily: 'Raleway_700Bold', fontSize: 20, color: '#FFFFFF', textAlign: 'center', marginBottom: 20, marginTop: 10 },
-  inputContainer: { backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16 },
-  modalInput: { fontFamily: 'Raleway_500Medium', fontSize: 15, color: '#2D3748' },
+  inputContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16
+  },
+  modalInput: {
+    fontFamily: 'Raleway_500Medium',
+    fontSize: 15,
+    color: '#2D3748',
+    width: '100%',
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none',
+    }),
+  },
   imageControlsRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 16 },
   advancedOptionsToggle: { padding: 4 },
   advancedOptionsText: { fontFamily: 'Raleway_500Medium', fontSize: 14, color: '#A0AEC0', textDecorationLine: 'underline' },

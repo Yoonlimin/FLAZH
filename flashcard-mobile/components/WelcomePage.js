@@ -7,7 +7,7 @@ export default function WelcomePage({ onGetStarted }) {
     <View style={styles.innerContainer}>
       <View style={styles.topSpacer} />
       <FadeUpView duration={1000}>
-        
+
         {/* Brand Header */}
         <View style={styles.brandContainer}>
           <Text style={styles.logoText}>FLAZH</Text>
@@ -16,8 +16,8 @@ export default function WelcomePage({ onGetStarted }) {
 
         {/* Central Illustration Layer */}
         <View style={styles.imageContainer}>
-          <Image 
-            source={require('../assets/logo.png')} 
+          <Image
+            source={require('../assets/logo.png')}
             style={styles.illustration}
             resizeMode="contain"
           />
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   topSpacer: {
-    height: 150,
+    height: 110,
   },
   brandContainer: {
     alignItems: 'center',
@@ -52,36 +52,37 @@ const styles = StyleSheet.create({
     fontFamily: 'Raleway_700Bold',
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#0A2540', 
+    color: '#0A2540',
     letterSpacing: 1.5,
   },
   taglineText: {
     fontFamily: 'Raleway_500Medium',
     fontSize: 14,
-    color: '#4F5E71', 
+    color: '#4F5E71',
     marginTop: 10,
     fontWeight: '500',
   },
   imageContainer: {
     alignItems: 'center',
     width: '100%',
-    marginTop: 10, 
+    marginTop: 10,
   },
   illustration: {
-    width: 500,  
-    height: 300, 
+    width: 500,
+    height: 300,
     resizeMode: 'contain',
   },
   buttonContainer: {
-    width: '100%',
+    width: '55%',
+    alignItems: 'center',
     paddingHorizontal: 24,
-    marginBottom: 20, 
+    marginBottom: 20,
   },
   button: {
-    backgroundColor: '#0F294A', 
+    backgroundColor: '#0F294A',
     width: '100%',
     paddingVertical: 16,
-    borderRadius: 12, 
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

@@ -4,8 +4,8 @@ const pool = require('../config/db');
 
 // Create Flashbook
 router.post('/', async (req, res) => {
-  const { userId, title, color, deckType } = req.body; 
-  
+  const { userId, title, color, deckType } = req.body;
+
   if (!title) return res.status(400).json({ error: 'Flashbook title is required' });
 
   try {
@@ -37,11 +37,8 @@ router.get('/:userId', async (req, res) => {
 // ✨ 1. DELETE route for Flashbooks
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-
   try {
-    // Make sure your DB connection variable (like 'pool' or 'db') matches what you use at the top of this file!
     await pool.query('DELETE FROM flashbooks WHERE id = $1', [id]);
-    
     res.status(200).json({ message: 'Flashbook deleted successfully' });
   } catch (error) {
     console.error("Error deleting flashbook:", error);
@@ -52,14 +49,14 @@ router.delete('/:id', async (req, res) => {
 // ✨ 2. PUT route to toggle Pin Status
 router.put('/:id/pin', async (req, res) => {
   const { id } = req.params;
-  const { isPinned } = req.body; 
+  const { isPinned } = req.body;
 
   try {
     await pool.query(
-      'UPDATE flashbooks SET "isPinned" = $1 WHERE id = $2', 
+      'UPDATE flashbooks SET "isPinned" = $1 WHERE id = $2',
       [isPinned, id]
     );
-    
+
     res.status(200).json({ message: 'Pin status updated successfully', isPinned });
   } catch (error) {
     console.error("Error updating pin status:", error);

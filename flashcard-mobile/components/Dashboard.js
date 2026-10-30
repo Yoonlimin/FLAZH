@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  Image, 
-  FlatList, 
-  TouchableOpacity, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  FlatList,
+  TouchableOpacity,
   Dimensions,
   Alert,
+  Platform,
   Modal // ✨ Added Modal for custom menu
 } from 'react-native';
 import CreateFlashbookModal from './CreateFlashbookModal';
 import FlashbookDetail from './FlashbookDetail';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
+
 
 Asset.loadAsync([
   require('../assets/logo.png'),
@@ -24,7 +26,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const COLUMN_SIZE = (SCREEN_WIDTH - 48 - 32) / 3;
 
 const babyColors = [
-  '#B4D4FF', '#FFD1DC', '#A8E6CF', '#DCD0FF', 
+  '#B4D4FF', '#FFD1DC', '#A8E6CF', '#DCD0FF',
   '#FFDAC1', '#FDFFB6', '#E2F0CB', '#C5E3F6'
 ];
 
@@ -35,12 +37,12 @@ export default function Dashboard({ user, onLogout }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState(null);
 
-  const [actionMode, setActionMode] = useState(null); 
+  const [actionMode, setActionMode] = useState(null);
   const [selectedForDelete, setSelectedForDelete] = useState([]);
-  
-  const [filterMode, setFilterMode] = useState('all'); 
+
+  const [filterMode, setFilterMode] = useState('all');
   // ✨ NEW: State to control our custom filter menu
-  const [filterMenuVisible, setFilterMenuVisible] = useState(false); 
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
 
   const userId = user?.id || 1;
 
@@ -58,13 +60,13 @@ export default function Dashboard({ user, onLogout }) {
     fetchFlashbooks();
   }, []);
 
-  const handleSaveFlashbook = async (title, deckType) => { 
+  const handleSaveFlashbook = async (title, deckType) => {
     const folderColor = getRandomBabyColor();
     try {
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/flashbooks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, title, color: folderColor, deckType }), 
+        body: JSON.stringify({ userId, title, color: folderColor, deckType }),
       });
 
       if (response.ok) {
@@ -91,26 +93,48 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   const handleDeleteSelected = () => {
+    if (selectedForDelete.length === 0) return;
+
+    const performDelete = async () => {
+      try {
+        await Promise.all(
+          selectedForDelete.map((id) =>
+            fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/flashbooks/${id}`, {
+              method: 'DELETE',
+            })
+          )
+        );
+
+        setSelectedForDelete([]);
+        setActionMode(null);
+        fetchFlashbooks();
+      } catch (error) {
+        console.error("Error deleting flashbooks:", error);
+      }
+    };
+
+    // Browser-compatible confirmation for web
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${selectedForDelete.length} flashbook(s)?`
+      );
+      if (confirmed) {
+        performDelete();
+      }
+      return;
+    }
+
+    // Native mobile alert for iOS/Android
     Alert.alert(
       "Delete Flashbooks",
       `Are you sure you want to delete ${selectedForDelete.length} flashbook(s)?`,
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", style: "destructive", 
-          onPress: async () => {
-            try {
-              for (let id of selectedForDelete) {
-                await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/flashbooks/${id}`, { method: 'DELETE' });
-              }
-              setSelectedForDelete([]);
-              setActionMode(null);
-              fetchFlashbooks();
-            } catch (error) {
-              console.error("Error deleting flashbooks:", error);
-            }
-          }
-        }
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: performDelete,
+        },
       ]
     );
   };
@@ -158,7 +182,7 @@ export default function Dashboard({ user, onLogout }) {
     return (
       <TouchableOpacity style={styles.cardContainer} activeOpacity={0.8} onPress={() => handleFolderPress(item)}>
         <View style={styles.folderWrapper}>
-          
+
           {actionMode === 'delete' && (
             <View style={styles.badgeContainer}>
               <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={22} color={isSelected ? "#FF4D4D" : "#A0AEC0"} />
@@ -175,7 +199,7 @@ export default function Dashboard({ user, onLogout }) {
           <View style={[styles.folderFront, { backgroundColor: activeColor + 'E6' }]} />
         </View>
         <Text style={styles.deckTitle} numberOfLines={1}>
-          {item.title} 
+          {item.title}
         </Text>
       </TouchableOpacity>
     );
@@ -205,7 +229,7 @@ export default function Dashboard({ user, onLogout }) {
             <TouchableOpacity style={[styles.toggleButton, actionMode === 'delete' && styles.toggleButtonActive]} onPress={() => { setActionMode(prev => prev === 'delete' ? null : 'delete'); setSelectedForDelete([]); }}>
               <Ionicons name="checkbox-outline" size={20} color={actionMode === 'delete' ? "#0A2540" : "#8E9BB0"} />
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={[styles.toggleButton, actionMode === 'pin' && styles.toggleButtonActive]} onPress={() => { setActionMode(prev => prev === 'pin' ? null : 'pin'); setSelectedForDelete([]); }}>
               <Ionicons name="pricetag-outline" size={20} color={actionMode === 'pin' ? "#0A2540" : "#8E9BB0"} />
             </TouchableOpacity>
@@ -213,8 +237,8 @@ export default function Dashboard({ user, onLogout }) {
         </View>
       )}
       {flashbooks.length > 0 && (
-        <TouchableOpacity 
-          style={styles.filterMenuButton} 
+        <TouchableOpacity
+          style={styles.filterMenuButton}
           onPress={() => setFilterMenuVisible(true)}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
@@ -292,11 +316,14 @@ export default function Dashboard({ user, onLogout }) {
   );
 }
 
+const CARD_WIDTH = 114;
+const CARD_HEIGHT = 88;
+
 const styles = StyleSheet.create({
   innerContainer: { flex: 1, width: '100%', backgroundColor: '#FFFFFF' },
   headerBar: { width: '100%', paddingHorizontal: 24, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   smallLogo: { width: 100, height: 60, marginLeft: -20 },
-  
+
   logoText: { fontFamily: 'Raleway_700Bold', fontSize: 36, color: '#0A2540', letterSpacing: 1.5, textAlign: 'center', bottom: 54 },
   screenSubtitle: { fontFamily: 'Raleway_500Medium', fontSize: 18, color: '#1A202C', textAlign: 'center', marginTop: 5, bottom: 48 },
 
@@ -304,8 +331,8 @@ const styles = StyleSheet.create({
   toggleContainer: { flexDirection: 'row', backgroundColor: '#F2F4F7', borderRadius: 8, padding: 4, width: 160 },
   toggleButton: { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: 6 },
   toggleButtonActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  
-  filterMenuButton: { position: 'absolute', right: 24, top: 153, zIndex: 20},
+
+  filterMenuButton: { position: 'absolute', right: 24, top: 153, zIndex: 20 },
 
   floatingDeleteBtn: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: '#FF4D4D', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 5 },
   floatingDeleteText: { color: '#FFF', fontFamily: 'Raleway_700Bold', fontSize: 16 },
@@ -337,7 +364,59 @@ const styles = StyleSheet.create({
   paperLineLong: { width: '90%', height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, marginBottom: 4 },
   paperLineShort: { width: '60%', height: 4, backgroundColor: '#E2E8F0', borderRadius: 2 },
   folderFront: { width: '100%', height: '70%', borderRadius: 8, borderTopLeftRadius: 6, borderTopRightRadius: 6, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.05, shadowRadius: 4 },
-  
+
+  mainContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 480, // Keeps it framed like a mobile app even on desktop laptops
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+  },
+
+  // 2. Folder scroll/grid container
+  foldersContainer: {
+    width: '100%',
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+
+  // 3. Responsive folder card size
+  folderCard: {
+    width: '100%', // Fills the container width cleanly
+    aspectRatio: 1.25, // Automatically maintains folder proportions without hardcoded massive heights
+    maxHeight: 280, // Caps height on taller screens
+    backgroundColor: '#2A4365',
+    borderRadius: 18,
+    position: 'relative',
+    marginVertical: 12,
+    overflow: 'hidden',
+  },
+
+  // 4. Folder top tab (if you have the folder tab shape)
+  folderTab: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '55%',
+    height: 38,
+    backgroundColor: '#1E314B',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 14,
+  },
+
+  // 5. Centered plus / action button inside the card
+  addDeckButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   addFolderWrapper: { opacity: 0.9 },
   folderBackAdd: { position: 'absolute', bottom: 0, width: '100%', height: '90%', backgroundColor: '#132644', borderRadius: 8 },
   folderTabAdd: { position: 'absolute', top: -6, left: 8, width: '40%', height: 10, backgroundColor: '#132644', borderTopLeftRadius: 6, borderTopRightRadius: 6 },
