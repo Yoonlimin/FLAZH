@@ -22,7 +22,7 @@ export default function EditWordScreen({ wordData, onBack, onSave, onDelete, dec
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // ✨ NEW: Check if it is a text-only deck
+  
   const isSimpleDeck = deckType === 'simple'; 
 
   useEffect(() => {
